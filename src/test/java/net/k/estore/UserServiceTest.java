@@ -3,6 +3,7 @@ package net.k.estore;
 import net.k.estore.data.UsersRepository;
 import net.k.estore.model.User;
 import net.k.estore.service.EmailVerificationService;
+import net.k.estore.service.EmailVerificationServiceImpl;
 import net.k.estore.service.UserServiceException;
 import net.k.estore.service.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +32,8 @@ public class UserServiceTest {
     @Mock
     private UsersRepository usersRepository;
     @Mock
-    private EmailVerificationService emailVerificationService;
+    // need to point to implementation to be able to run the real method
+    private EmailVerificationServiceImpl emailVerificationService;
 
     @BeforeEach
     void prepareUser() {
@@ -103,17 +105,24 @@ public class UserServiceTest {
     @DisplayName("EmailService Exception")
     void testCreateUser_emailException(){
         // Arrange
-        Mockito.when(usersRepository.save(Mockito.any(User.class)))
-                .thenThrow(UserServiceException.class);
+        Mockito.doReturn(true)
+                .when(usersRepository)
+                .save(Mockito.any(User.class));
+        Mockito.doThrow(RuntimeException.class)
+               .when(emailVerificationService)
+                .scheduleEmailConfirmation(Mockito.any(User.class));
         // Act
         Throwable exception = assertThrows(UserServiceException.class,
                 () -> {
                     userService.createUser(firstName,lastName, email, password, repeatPassword);
                 });
         // Assert
+        Mockito.verify(emailVerificationService,Mockito.times(1))
+                .scheduleEmailConfirmation(Mockito.any(User.class));
     }
 
     @Test
+    @DisplayName("Parameter-EmptyFirstName")
     void testCreateUser_exceptionFirstname() {
         // Arrange
         String emptyFristName = "";
@@ -129,6 +138,7 @@ public class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Parameter-EmptyLastName")
     void testCreateUser_exceptionLastName() {
         // Arrange
         String emptyLastName = "";
@@ -144,6 +154,7 @@ public class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Parameter-IncorrectPassword")
     void testCreateUser_exceptionPassword() {
         // Arrange
         String differentPassword = "yyyyyyyy";
@@ -156,5 +167,21 @@ public class UserServiceTest {
 
         // Asert
         assertEquals("Passwords do not match",exception.getMessage(), "Unexpected Exception");
+    }
+
+    @Test
+    void testCreateUser_scheduleEmailConfirmation(){
+        // Arrange
+        Mockito.doReturn(true)
+                .when(usersRepository)
+                .save(Mockito.any(User.class));
+        Mockito.doCallRealMethod()
+                .when(emailVerificationService)
+                .scheduleEmailConfirmation(Mockito.any(User.class));
+        // Act
+        User user = userService.createUser(firstName,lastName,email,password,repeatPassword);
+        // Assert
+        Mockito.verify(emailVerificationService,Mockito.times(1))
+                .scheduleEmailConfirmation(Mockito.any(User.class));
     }
 }
