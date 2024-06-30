@@ -14,4 +14,9 @@ public class UsersRepositoryImpl implements UsersRepository{
         users.put(user.getId(),user);
         return true;
     }
+
+    @Override
+    public User load(String id) {
+        return null;
+    }
 }

@@ -53,4 +53,10 @@ public class UserServiceImpl implements UserService {
 
         return user;
     }
+
+    @Override
+    public User deleteUser(User user) {
+        //unimplemented
+        return null;
+    }
 }
